@@ -20,15 +20,15 @@ var (
 )
 
 type hostname struct {
-	hostname string
-	ip       string
+	IP   string `json:"id"`
+	Name string `json:"name"`
 }
 
 var hostnameType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Hostname",
 		Fields: graphql.Fields{
-			"hostname": &graphql.Field{
+			"name": &graphql.Field{
 				Type: graphql.String,
 			},
 			"ip": &graphql.Field{
@@ -64,8 +64,8 @@ var queryType = graphql.NewObject(
 func getHostname(ip string) (*hostname, error) {
 	if names, err := net.LookupAddr(ip); err == nil && len(names) > 0 {
 		return &hostname{
-			hostname: names[0],
-			ip:       ip,
+			Name: names[0],
+			IP:   ip,
 		}, nil
 	} else {
 		log.Error(err)
