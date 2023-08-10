@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,6 +17,12 @@ var (
 	logLevel = "info"
 	port     = 9339
 )
+
+type postData struct {
+	Query     string                 `json:"query"`
+	Operation string                 `json:"operation"`
+	Variables map[string]interface{} `json:"variables"`
+}
 
 type hostname struct {
 	IP   string `json:"id"`
@@ -40,7 +45,7 @@ var hostnameType = graphql.NewObject(
 
 var queryType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "Query",
+		Name: "RootQuery",
 		Fields: graphql.Fields{
 			"hostname": &graphql.Field{
 				Type: hostnameType,
@@ -79,18 +84,6 @@ var schema, _ = graphql.NewSchema(
 	},
 )
 
-func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-
-	result := graphql.Do(graphql.Params{
-		Schema:        schema,
-		RequestString: query,
-	})
-	if len(result.Errors) > 0 {
-		fmt.Printf("wrong result, unexpected errors: %v", result.Errors)
-	}
-	return result
-}
-
 func init() {
 	flag.IntVarP(&port,
 		"port",
@@ -113,7 +106,7 @@ func init() {
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		log.Info(r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -122,8 +115,21 @@ func main() {
 	log.Info("Starting graphql server on port ", port)
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		log.Info("Request received: ", r.URL.Query().Get("query"))
-		result := executeQuery(r.URL.Query().Get("query"), schema)
+		var p postData
+		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+			log.Error(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		result := graphql.Do(graphql.Params{
+			Context:        r.Context(),
+			Schema:         schema,
+			RequestString:  p.Query,
+			VariableValues: p.Variables,
+			OperationName:  p.Operation,
+		})
+
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			log.Error(err)
 		}
