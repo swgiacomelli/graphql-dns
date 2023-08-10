@@ -111,6 +111,13 @@ func init() {
 	}
 }
 
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	log.Info("Starting graphql server on port ", port)
 
@@ -122,5 +129,5 @@ func main() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), logRequest(http.DefaultServeMux)))
 }
