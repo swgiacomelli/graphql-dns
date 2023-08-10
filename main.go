@@ -80,6 +80,7 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
+
 	result := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
@@ -114,6 +115,7 @@ func main() {
 	log.Info("Starting graphql server on port ", port)
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
+		log.Info("Request received: ", r.RequestURI)
 		result := executeQuery(r.URL.Query().Get("query"), schema)
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			log.Error(err)
