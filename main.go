@@ -115,7 +115,7 @@ func main() {
 	log.Info("Starting graphql server on port ", port)
 
 	http.HandleFunc("/graphql", func(w http.ResponseWriter, r *http.Request) {
-		log.Info("Request received: ", r.URL.Query())
+		log.Info("Request received: ", r.URL)
 		result := executeQuery(r.URL.Query().Get("query"), schema)
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			log.Error(err)
